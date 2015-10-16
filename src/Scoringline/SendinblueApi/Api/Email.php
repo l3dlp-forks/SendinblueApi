@@ -25,7 +25,7 @@ class Email extends AbstractApi
      * @param array  $cc         I.e: ['cc@example.com' => 'cc name']
      * @param array  $bcc        I.e: ['bcc@example.com' => 'bcc name']
      * @param array $attachment
-     * @param array $headers     I.e ["Content-Type" => "text/html; charset=iso-8859-1"]
+     * @param array $headers     I.e ["Content-Type" => "text/html; charset=utf-8"]
      * @param array $inlineImage I.e ['YourFileName.Extension' => 'Base64EncodedChunkData'). associative array
      * @return array
      * @throws \RuntimeException

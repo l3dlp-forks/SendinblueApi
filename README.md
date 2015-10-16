@@ -59,7 +59,7 @@ $sendinblue->getSmsApi()->sendSms('+33600000000', 'Your name', 'The message you 
 
 Email Api usage
 -------------
-
+```php
 <?php
 
 require 'vendor/autoload.php';
@@ -78,10 +78,10 @@ $sendinblue->getEmailApi()->sendEmail(
     ['cc@example.com' => 'cc name'],
     ['bcc@example.com' => 'bcc name'],
     [],
-    ['Content-Type" => "text/html; charset=iso-8859-1'],
+    ['Content-Type" => "text/html; charset=utf-8'],
     ['myinlineimage1.png' => 'your_png_files_base64_encoded_chunk_data']
 ); 
-
+```
 
 ----------------------------------------------------------------
 
