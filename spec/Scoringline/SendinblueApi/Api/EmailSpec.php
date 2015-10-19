@@ -23,7 +23,7 @@ class EmailSpec extends ObjectBehavior
         $this->shouldHaveType('Nekland\BaseApi\Api\AbstractApi');
     }
 
-    function it_should_send_email(TransformerInterface $transformer)
+    function it_should_send_email_with_attachment(TransformerInterface $transformer)
     {
         $result = [
             'code' => 'success',
@@ -35,11 +35,42 @@ class EmailSpec extends ObjectBehavior
 
         $this
             ->sendEmail(
-                ['joni@sendinblue.com' => 'Joni Baba'],
-                ['m.veber@scoringline.com', 'Maxime Veber'],
+                ['joni@sendinblue.com' => 'Baba'],
+                ['m.veber@scoringline.com', 'Veber'],
                 'Invitaion for test',
                 'You are invited for giving test!',
-                '<b>You are invited for giving test!</b>'
+                '<b>You are invited for giving test!</b>',
+                ['Content-Type" => "text/html; charset=utf-8'],
+                [],
+                [],
+                [],
+                ['myfilename.pdf' => chunk_split(base64_encode('myfilename.pdf'))],
+                ['inline-image.png' => chunk_split(base64_encode('inline-image.png'))]
+            )
+            ->shouldReturn($result);
+    }
+
+    function it_should_send_email_blank_carbon_copy_and_without_attachment(TransformerInterface $transformer)
+    {
+        $result = [
+            'code' => 'success',
+            'message' => 'Email sent successfully',
+            'data' => []
+        ];
+        $transformer->transform('res')->willReturn($result);
+        $this
+            ->sendEmail(
+                ['joni@sendinblue.com' => 'Baba'],
+                ['m.veber@scoringline.com', 'Veber'],
+                'Invitaion for test',
+                'You are invited for giving test!',
+                '<b>You are invited for giving test!</b>',
+                ['Content-Type" => "text/html; charset=utf-8'],
+                [],
+                [],
+                ['joni1@sendinblue.com' => 'Joni'],
+                [],
+                []
             )
             ->shouldReturn($result)
         ;
@@ -54,13 +85,19 @@ class EmailSpec extends ObjectBehavior
         $transformer->transform('res')->willReturn($result);
 
         $this
-            ->shouldThrow('\RuntimeException')
+            ->shouldThrow('\Exception')
             ->duringSendEmail(
                 [],
                 ['m.veber@scoringline.com', 'Maxime Veber'],
                 'Invitaion for test',
                 'You are invited for giving test!',
-                '<b>You are invited for giving test!</b>'
+                '<b>You are invited for giving test!</b>',
+                ['Content-Type" => "text/html; charset=utf-8'],
+                [],
+                [],
+                ['joni1@sendinblue.com' => 'Joni'],
+                [],
+                ['inline-image.png' => base64_encode('inline-image.png')]
             )
         ;
     }

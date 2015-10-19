@@ -73,13 +73,13 @@ $sendinblue->getEmailApi()->sendEmail(
     ['from@yahoo.com', 'from email or name!'],
     'Invitation',
     'You are invited for giving test',
-    'This is the <h1>HTML</h1>'
+    'This is the <h1>HTML</h1>',
+    ['Content-Type" => "text/html; charset=utf-8'],
     ['replyto@yahoo.com', 'reply to!'],
     ['cc@example.com' => 'cc name'],
     ['bcc@example.com' => 'bcc name'],
-    [],
-    ['Content-Type" => "text/html; charset=utf-8'],
-    ['myinlineimage1.png' => 'your_png_files_base64_encoded_chunk_data']
+    ['myfilename.pdf' => chunk_split(base64_encode('myfilename.pdf'))],    
+    ['inline-image.png' => chunk_split(base64_encode('inline-image.png'))]
 ); 
 ```
 

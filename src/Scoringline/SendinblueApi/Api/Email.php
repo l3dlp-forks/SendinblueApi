@@ -30,7 +30,7 @@ class Email extends AbstractApi
 
      * @param array $inlineImage I.e ['YourFileName.Extension' => 'Base64EncodedChunkData'). associative array
      * @return array
-     * @throws \RuntimeException
+     * @throws \Exception
      */
     public function sendEmail(
         $to,
@@ -51,16 +51,16 @@ class Email extends AbstractApi
             'subject' => $subject,
             'text' => $text,
             'html' => $html,
+            'headers'=> $headers,
             'replyto' => $replyTo,
             'cc' => $cc,
             'bcc' => $bcc,
             'attachment' => $attachment,
-            'headers'=> $headers,
             'inline_image' => $inlineImage
         ]));
 
         if ($result['code'] === 'failure') {
-            throw new \RuntimeException($result['message']);
+            throw new \Exception('Email can not send by Sendinblue');
         }
 
         return $result;
