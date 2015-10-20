@@ -7,6 +7,7 @@ use Nekland\BaseApi\Transformer\TransformerInterface;
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
 use Scoringline\SendinblueApi\Model\Email;
+use Symfony\Component\HttpFoundation\File\File;
 
 class EmailSpec extends ObjectBehavior
 {
@@ -37,12 +38,14 @@ class EmailSpec extends ObjectBehavior
         $client->send(Argument::any())->willReturn($resultString);
         $transformer->transform($resultString)->willReturn($result);
 
+        $file = new File('/docs/mydocument.doc');
+
         $email->setTo(['to@example.com' => 'to name!']);
         $email->setFrom(['from@example.com', 'from name!']);
         $email->setSubject('Invitation');
         $email->setText('You are invited for giving test');
         $email->setHtml('This is the <h1>HTML</h1>');
-        $email->setAttachment(['myfilename.pdf', '/docs/mydocument.doc', 'images/image.gif']);
+        $email->setAttachment(['myfilename.pdf', $file, 'images/image.gif']);
         $email->setInlineImage(['logo.png', 'images/image.gif']);
 
         $this->sendEmail($email)->shouldReturn($result);

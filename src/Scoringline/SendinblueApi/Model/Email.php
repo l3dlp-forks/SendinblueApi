@@ -2,6 +2,8 @@
 
 namespace Scoringline\SendinblueApi\Model;
 
+use Symfony\Component\HttpFoundation\File\File;
+
 class Email
 {
     /**
@@ -232,21 +234,33 @@ class Email
     }
 
     /**
-     * @param array $attachmentArray
+     * @param array|object $attachmentData
      * @return Email
      */
-    public function setAttachment(array $attachmentArray)
+    public function setAttachment($attachmentData)
     {
         // SOF attachment content encoding
-        if (count($attachmentArray)) {
-            for ($i = 0; $i < count($attachmentArray); $i++) {
-                if (file_exists($attachmentArray[$i])) {
-                    $attachmentInfo = pathinfo($attachmentArray[$i]);
-                    $attachmentContent = chunk_split(base64_encode(file_get_contents($attachmentArray[$i])));
-                    $this->attachment[$attachmentInfo['basename']] = $attachmentContent;
+        if (is_array($attachmentData) && count($attachmentData)) {
+            for ($i = 0; $i < count($attachmentData); $i++) {
+                if (is_object($attachmentData[$i]) && $attachmentData[$i] instanceof File) {
+                    if ($attachmentData[$i]->isFile()) {
+                        $attachmentContent = chunk_split(base64_encode(file_get_contents($attachmentData[$i])));
+                        $this->attachment[$attachmentData[$i]->getFilename()] = $attachmentContent;
+                    }
+                } else {
+                    if (file_exists($attachmentData[$i])) {
+                        $attachmentInfo = pathinfo($attachmentData[$i]);
+                        $attachmentContent = chunk_split(base64_encode(file_get_contents($attachmentData[$i])));
+                        $this->attachment[$attachmentInfo['basename']] = $attachmentContent;
+                    }
                 }
+
             }
+        } elseif (is_object($attachmentData) && null === $attachmentData && $attachmentData->isValid()) {
+            $attachmentContent = chunk_split(base64_encode(file_get_contents($attachmentData)));
+            $this->attachment[$attachmentData->getClientOriginalName()] = $attachmentContent;
         }
+
         // EOF image content encoding
 
         return $this;
