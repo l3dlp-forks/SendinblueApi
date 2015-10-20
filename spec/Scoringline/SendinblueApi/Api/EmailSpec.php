@@ -6,6 +6,7 @@ use Nekland\BaseApi\Http\AbstractHttpClient;
 use Nekland\BaseApi\Transformer\TransformerInterface;
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
+use Scoringline\SendinblueApi\Model\Email;
 
 class EmailSpec extends ObjectBehavior
 {
@@ -13,8 +14,6 @@ class EmailSpec extends ObjectBehavior
     function let(AbstractHttpClient $client, TransformerInterface $transformer)
     {
         $this->beConstructedWith($client, $transformer);
-
-        $client->send(Argument::any())->willReturn('res');
     }
 
     function it_is_initializable()
@@ -23,82 +22,74 @@ class EmailSpec extends ObjectBehavior
         $this->shouldHaveType('Nekland\BaseApi\Api\AbstractApi');
     }
 
-    function it_should_send_email_with_attachment(TransformerInterface $transformer)
-    {
+    function it_should_send_email_with_attachment_and_inline_image(
+        AbstractHttpClient $client,
+        TransformerInterface $transformer,
+        Email $email
+    ) {
         $result = [
             'code' => 'success',
             'message' => 'Email sent successfully',
             'data' => []
         ];
 
-        $transformer->transform('res')->willReturn($result);
+        $resultString = (string) (json_encode($result));
+        $client->send(Argument::any())->willReturn($resultString);
+        $transformer->transform($resultString)->willReturn($result);
 
-        $this
-            ->sendEmail(
-                ['joni@sendinblue.com' => 'Baba'],
-                ['m.veber@scoringline.com', 'Veber'],
-                'Invitaion for test',
-                'You are invited for giving test!',
-                '<b>You are invited for giving test!</b>',
-                ['Content-Type" => "text/html; charset=utf-8'],
-                [],
-                [],
-                [],
-                ['myfilename.pdf' => chunk_split(base64_encode('myfilename.pdf'))],
-                ['inline-image.png' => chunk_split(base64_encode('inline-image.png'))]
-            )
-            ->shouldReturn($result);
-    }
-
-    function it_should_send_email_blank_carbon_copy_and_without_attachment(TransformerInterface $transformer)
-    {
-        $result = [
-            'code' => 'success',
-            'message' => 'Email sent successfully',
-            'data' => []
-        ];
-        $transformer->transform('res')->willReturn($result);
-        $this
-            ->sendEmail(
-                ['joni@sendinblue.com' => 'Baba'],
-                ['m.veber@scoringline.com', 'Veber'],
-                'Invitaion for test',
-                'You are invited for giving test!',
-                '<b>You are invited for giving test!</b>',
-                ['Content-Type" => "text/html; charset=utf-8'],
-                [],
-                [],
-                ['joni1@sendinblue.com' => 'Joni'],
-                [],
-                []
-            )
-            ->shouldReturn($result)
+        $email
+            ->setTo(['to@example.com' => 'to name!'])
+            ->setFrom(['to@example.com', 'to name!'])
+            ->setSubject('Invitation')
+            ->setText('You are invited for giving test')
+            ->setHtml('This is the <h1>HTML</h1>')
+            ->setAttachment(['myfilename.pdf', '/docs/mydocument.doc', 'images/image.gif'])
+            ->setInlineImage(['logo.png', 'images/image.gif'])
         ;
+
+        $this->sendEmail($email)->shouldReturn($result);
     }
 
-    function it_should_throw_exception_when_email_send_failed(TransformerInterface $transformer)
+    function it_should_send_email_blank_carbon_copy(
+        AbstractHttpClient $client,
+        TransformerInterface $transformer,
+        Email $email)
     {
+        $result = [
+            'code' => 'success',
+            'message' => 'Email sent successfully',
+            'data' => []
+        ];
+        $resultString = (string) (json_encode($result));
+        $client->send(Argument::any())->willReturn($resultString);
+        $transformer->transform($resultString)->willReturn($result);
+        $email
+            ->setTo(['to@example.com' => 'to name!'])
+            ->setFrom(['from@example.com', 'from name!'])
+            ->setSubject('Invitation')
+            ->setText('You are invited for giving test')
+            ->setHtml('This is the <h1>HTML</h1>')
+            ->setBcc(['bcc@example.com' => 'Bcc name']);
+        ;
+
+        $this->sendEmail($email)->shouldReturn($result);
+    }
+
+    function it_should_throw_exception_when_email_send_failed(
+        AbstractHttpClient $client,
+        TransformerInterface $transformer,
+        Email $email
+    ) {
         $result = [
             'code' => 'failure'
         ];
 
-        $transformer->transform('res')->willReturn($result);
+        $resultString = (string) (json_encode($result));
+        $client->send(Argument::any())->willReturn($resultString);
+        $transformer->transform($resultString)->willReturn($result);
 
-        $this
-            ->shouldThrow('\Exception')
-            ->duringSendEmail(
-                [],
-                ['m.veber@scoringline.com', 'Maxime Veber'],
-                'Invitaion for test',
-                'You are invited for giving test!',
-                '<b>You are invited for giving test!</b>',
-                ['Content-Type" => "text/html; charset=utf-8'],
-                [],
-                [],
-                ['joni1@sendinblue.com' => 'Joni'],
-                [],
-                ['inline-image.png' => base64_encode('inline-image.png')]
-            )
-        ;
+        $email->setFrom(['from@example.com', 'from name!']);
+
+        $this->shouldThrow('\Exception')->duringSendEmail($email);
     }
 }

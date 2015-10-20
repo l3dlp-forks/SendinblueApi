@@ -11,52 +11,31 @@
 namespace Scoringline\SendinblueApi\Api;
 
 use Nekland\BaseApi\Api\AbstractApi;
+use Scoringline\SendinblueApi\Model\EmailModel;
 
 class Email extends AbstractApi
 {
     const API_URL = '/email';
 
     /**
-     * @param array  $to         I.e: ['to@example.com'=> 'to name'] associative array with commas to separate multiple recipients
-     * @param array  $from       I.e: ['from@yahoo.com', 'from email']
-     * @param string $subject    I.e: "Invitation"
-     * @param string $text       I.e: "You are invited for giving test!"
-     * @param string $html       I.e: "This is the <h1>HTML</h1>"
-     * @param array $headers     I.e ["Content-Type" => "text/html; charset=utf-8"]
-     * @param array  $replyTo    I.e: ['replyto@yahoo.com', 'reply to']
-     * @param array  $cc         I.e: ['cc@example.com' => 'cc name']
-     * @param array  $bcc        I.e: ['bcc@example.com' => 'bcc name']
-     * @param array $attachment
-
-     * @param array $inlineImage I.e ['YourFileName.Extension' => 'Base64EncodedChunkData'). associative array
+     * @param EmailModel $emailModel
      * @return array
      * @throws \Exception
      */
-    public function sendEmail(
-        $to,
-        $from,
-        $subject,
-        $text,
-        $html,
-        $headers = ["Content-Type" => "text/html; charset=utf-8"],
-        $replyTo = [],
-        $cc = [],
-        $bcc = [],
-        $attachment = [],
-        $inlineImage = []
-    ) {
+    public function sendEmail(EmailModel $emailModel)
+    {
         $result = $this->post(self::API_URL, json_encode([
-            'to' => $to,
-            'from'=> $from,
-            'subject' => $subject,
-            'text' => $text,
-            'html' => $html,
-            'headers'=> $headers,
-            'replyto' => $replyTo,
-            'cc' => $cc,
-            'bcc' => $bcc,
-            'attachment' => $attachment,
-            'inline_image' => $inlineImage
+            'to' => $emailModel->getTo(),
+            'from'=> $emailModel->getFrom(),
+            'subject' => $emailModel->getSubject(),
+            'text' => $emailModel->getText(),
+            'html' => $emailModel->getHtml(),
+            'headers'=> $emailModel->getHeaders(),
+            'replyto' => $emailModel->getReplyTo(),
+            'cc' => $emailModel->getCc(),
+            'bcc' => $emailModel->getBcc(),
+            'attachment' => $emailModel->getAttachment(),
+            'inline_image' => $emailModel->getInlineImage()
         ]));
 
         if ($result['code'] === 'failure') {

@@ -65,22 +65,26 @@ Email Api usage
 require 'vendor/autoload.php';
 
 use Scoringline\SendinblueApi\Sendinblue;
+use Scoringline\SendinblueApi\Model\Email;
 
 $sendinblue = new Sendinblue();
 
-$sendinblue->getEmailApi()->sendEmail(
-    ['to@example.com'=> 'to name!'],
-    ['from@yahoo.com', 'from email or name!'],
-    'Invitation',
-    'You are invited for giving test',
-    'This is the <h1>HTML</h1>',
-    ['Content-Type" => "text/html; charset=utf-8'],
-    ['replyto@yahoo.com', 'reply to!'],
-    ['cc@example.com' => 'cc name'],
-    ['bcc@example.com' => 'bcc name'],
-    ['myfilename.pdf' => chunk_split(base64_encode('myfilename.pdf'))],    
-    ['inline-image.png' => chunk_split(base64_encode('inline-image.png'))]
-); 
+$email = new Email();
+$email
+    ->setTo(['to@example.com'=> 'to name!'])
+    ->setFrom(['to@example.com', 'to name!'])
+    ->setSubject('Invitation')
+    ->setText('You are invited for giving test');
+    ->setHtml('This is the <h1>HTML</h1>')
+    ->setReplyTo(['replyto@example.com', 'replyto name'])
+    ->setCc(['cc@example.com' => 'cc name'])
+    ->setBcc(['bcc@example.com' => 'Bcc name']);
+    ->setAttachment(['myfilename.pdf', '/docs/mydocument.doc', 'images/image.gif'])
+    ->setInlineImage(['logo.png', 'images/image.gif'])
+    ->setHeaders(["Content-Type" => "text/html; charset=utf-8"])
+    ;
+$sendinblue->sendEmail($email);    
+    
 ```
 
 ----------------------------------------------------------------
