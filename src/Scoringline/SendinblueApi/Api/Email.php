@@ -11,7 +11,7 @@
 namespace Scoringline\SendinblueApi\Api;
 
 use Nekland\BaseApi\Api\AbstractApi;
-use Scoringline\SendinblueApi\Model\EmailModel;
+use Scoringline\SendinblueApi\Model\Email as EmailModel;
 
 class Email extends AbstractApi
 {
