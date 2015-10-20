@@ -71,7 +71,7 @@ $sendinblue = new Sendinblue();
 
 $email = new Email();
 $email
-    ->setTo(['to@example.com'=> 'to name!'])
+    ->setTo(['to@example.com' => 'to name!'])
     ->setFrom(['to@example.com', 'to name!'])
     ->setSubject('Invitation')
     ->setText('You are invited for giving test');

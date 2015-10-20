@@ -37,15 +37,13 @@ class EmailSpec extends ObjectBehavior
         $client->send(Argument::any())->willReturn($resultString);
         $transformer->transform($resultString)->willReturn($result);
 
-        $email
-            ->setTo(['to@example.com' => 'to name!'])
-            ->setFrom(['to@example.com', 'to name!'])
-            ->setSubject('Invitation')
-            ->setText('You are invited for giving test')
-            ->setHtml('This is the <h1>HTML</h1>')
-            ->setAttachment(['myfilename.pdf', '/docs/mydocument.doc', 'images/image.gif'])
-            ->setInlineImage(['logo.png', 'images/image.gif'])
-        ;
+        $email->setTo(['to@example.com' => 'to name!']);
+        $email->setFrom(['from@example.com', 'from name!']);
+        $email->setSubject('Invitation');
+        $email->setText('You are invited for giving test');
+        $email->setHtml('This is the <h1>HTML</h1>');
+        $email->setAttachment(['myfilename.pdf', '/docs/mydocument.doc', 'images/image.gif']);
+        $email->setInlineImage(['logo.png', 'images/image.gif']);
 
         $this->sendEmail($email)->shouldReturn($result);
     }
@@ -63,14 +61,14 @@ class EmailSpec extends ObjectBehavior
         $resultString = (string) (json_encode($result));
         $client->send(Argument::any())->willReturn($resultString);
         $transformer->transform($resultString)->willReturn($result);
-        $email
-            ->setTo(['to@example.com' => 'to name!'])
-            ->setFrom(['from@example.com', 'from name!'])
-            ->setSubject('Invitation')
-            ->setText('You are invited for giving test')
-            ->setHtml('This is the <h1>HTML</h1>')
-            ->setBcc(['bcc@example.com' => 'Bcc name']);
-        ;
+
+        $email->setTo(['to@example.com' => 'to name!']);
+        $email->setFrom(['from@example.com', 'from name!']);
+        $email->setSubject('Invitation');
+        $email->setText('You are invited for giving test');
+        $email->setHtml('This is the <h1>HTML</h1>');
+        $email->setBcc(['bcc@example.com' => 'Bcc name']);
+
 
         $this->sendEmail($email)->shouldReturn($result);
     }
