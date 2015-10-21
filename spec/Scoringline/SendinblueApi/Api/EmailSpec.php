@@ -34,11 +34,11 @@ class EmailSpec extends ObjectBehavior
             'data' => []
         ];
 
+        $file = new File('test.txt');
+
         $resultString = (string) (json_encode($result));
         $client->send(Argument::any())->willReturn($resultString);
         $transformer->transform($resultString)->willReturn($result);
-
-        $file = new File('/docs/mydocument.doc');
 
         $email->setTo(['to@example.com' => 'to name!']);
         $email->setFrom(['from@example.com', 'from name!']);
