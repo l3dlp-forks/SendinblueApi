@@ -6,8 +6,9 @@ use Nekland\BaseApi\Http\AbstractHttpClient;
 use Nekland\BaseApi\Transformer\TransformerInterface;
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
-use Scoringline\SendinblueApi\Model\Email;
 use Symfony\Component\HttpFoundation\File\File;
+use Scoringline\SendinblueApi\Model\Email;
+
 
 class EmailSpec extends ObjectBehavior
 {
@@ -26,7 +27,8 @@ class EmailSpec extends ObjectBehavior
     function it_should_send_email_with_attachment_and_inline_image(
         AbstractHttpClient $client,
         TransformerInterface $transformer,
-        Email $email
+        Email $email,
+        File $file
     ) {
         $result = [
             'code' => 'success',
@@ -34,7 +36,7 @@ class EmailSpec extends ObjectBehavior
             'data' => []
         ];
 
-        $file = new File('test.txt');
+        //$file = new File('test.txt');
 
         $resultString = (string) (json_encode($result));
         $client->send(Argument::any())->willReturn($resultString);
