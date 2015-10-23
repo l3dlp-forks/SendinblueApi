@@ -34,9 +34,9 @@ class EmailSpec extends ObjectBehavior
             'data' => []
         ];
 
-        $file = new File('README.md');
+        $file = new File('fixtures/test.txt');
 
-        $resultString = (string) (json_encode($result));
+        $resultString = json_encode($result);
         $client->send(Argument::any())->willReturn($resultString);
         $transformer->transform($resultString)->willReturn($result);
 
@@ -62,7 +62,7 @@ class EmailSpec extends ObjectBehavior
             'data' => []
         ];
 
-        $resultString = (string) (json_encode($result));
+        $resultString = json_encode($result);
         $client->send(Argument::any())->willReturn($resultString);
         $transformer->transform($resultString)->willReturn($result);
 
@@ -85,7 +85,7 @@ class EmailSpec extends ObjectBehavior
             'code' => 'failure'
         ];
 
-        $resultString = (string) (json_encode($result));
+        $resultString = json_encode($result);
         $client->send(Argument::any())->willReturn($resultString);
         $transformer->transform($resultString)->willReturn($result);
 
