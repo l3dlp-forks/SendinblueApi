@@ -35,7 +35,7 @@ class EmailSpec extends ObjectBehavior
             'data' => []
         ];
 
-        $file = new File('test.txt');
+        $file = new File('README.md');
 
         $resultString = (string) (json_encode($result));
         $client->send(Argument::any())->willReturn($resultString);
