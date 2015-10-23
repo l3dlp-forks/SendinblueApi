@@ -27,8 +27,7 @@ class EmailSpec extends ObjectBehavior
     function it_should_send_email_with_attachment_and_inline_image(
         AbstractHttpClient $client,
         TransformerInterface $transformer,
-        Email $email,
-        File $file
+        Email $email
     ) {
         $result = [
             'code' => 'success',
@@ -36,7 +35,7 @@ class EmailSpec extends ObjectBehavior
             'data' => []
         ];
 
-        //$file = new File('test.txt');
+        $file = new File('test.txt');
 
         $resultString = (string) (json_encode($result));
         $client->send(Argument::any())->willReturn($resultString);
