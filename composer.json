@@ -6,8 +6,9 @@
     "license":     "MIT",
     "require": {
         "php": ">=5.4",
-        "nekland/base-api": "~1.1",
-        "guzzlehttp/guzzle": "~5.0"
+        "nekland/base-api": "~1.1.0",
+        "guzzlehttp/guzzle": "~5.0",
+        "symfony/symfony": "2.6.*"
     },
     "require-dev": {
         "phpspec/phpspec": "~2.1"
