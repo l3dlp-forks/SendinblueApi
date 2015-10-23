@@ -9,7 +9,6 @@ use Prophecy\Argument;
 use Symfony\Component\HttpFoundation\File\File;
 use Scoringline\SendinblueApi\Model\Email;
 
-
 class EmailSpec extends ObjectBehavior
 {
 
@@ -62,6 +61,7 @@ class EmailSpec extends ObjectBehavior
             'message' => 'Email sent successfully',
             'data' => []
         ];
+
         $resultString = (string) (json_encode($result));
         $client->send(Argument::any())->willReturn($resultString);
         $transformer->transform($resultString)->willReturn($result);
@@ -72,7 +72,6 @@ class EmailSpec extends ObjectBehavior
         $email->setText('You are invited for giving test');
         $email->setHtml('This is the <h1>HTML</h1>');
         $email->setBcc(['bcc@example.com' => 'Bcc name']);
-
 
         $this->sendEmail($email)->shouldReturn($result);
     }
