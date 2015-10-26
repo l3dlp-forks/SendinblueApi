@@ -23,35 +23,7 @@ class EmailSpec extends ObjectBehavior
         $this->shouldHaveType('Nekland\BaseApi\Api\AbstractApi');
     }
 
-    function it_should_send_email_with_attachment_and_inline_image(
-        AbstractHttpClient $client,
-        TransformerInterface $transformer,
-        Email $email
-    ) {
-        $result = [
-            'code' => 'success',
-            'message' => 'Email sent successfully',
-            'data' => []
-        ];
-
-        $file = new File('fixtures/test.txt');
-
-        $resultString = json_encode($result);
-        $client->send(Argument::any())->willReturn($resultString);
-        $transformer->transform($resultString)->willReturn($result);
-
-        $email->setTo(['to@example.com' => 'to name!']);
-        $email->setFrom(['from@example.com', 'from name!']);
-        $email->setSubject('Invitation');
-        $email->setText('You are invited for giving test');
-        $email->setHtml('This is the <h1>HTML</h1>');
-        $email->setAttachment(['myfilename.pdf', $file, 'images/image.gif']);
-        $email->setInlineImage(['logo.png', 'images/image.gif']);
-
-        $this->sendEmail($email)->shouldReturn($result);
-    }
-
-    function it_should_send_email_blank_carbon_copy(
+    function it_should_send_basic_email(
         AbstractHttpClient $client,
         TransformerInterface $transformer,
         Email $email)
@@ -71,18 +43,47 @@ class EmailSpec extends ObjectBehavior
         $email->setSubject('Invitation');
         $email->setText('You are invited for giving test');
         $email->setHtml('This is the <h1>HTML</h1>');
-        $email->setBcc(['bcc@example.com' => 'Bcc name']);
 
         $this->sendEmail($email)->shouldReturn($result);
     }
 
-    function it_should_throw_exception_when_email_send_failed(
+    function it_should_send_advance_email_with_attachment_and_inline_image_when_exists_files(
         AbstractHttpClient $client,
         TransformerInterface $transformer,
         Email $email
     ) {
         $result = [
-            'code' => 'failure'
+            'code' => 'success',
+            'message' => 'Email sent successfully',
+            'data' => []
+        ];
+
+        $file = new File('fixtures/test.txt');
+        $imageFile = new File('fixtures/logo_one.png');
+
+        $resultString = json_encode($result);
+        $client->send(Argument::any())->willReturn($resultString);
+        $transformer->transform($resultString)->willReturn($result);
+
+        $email->setTo(['to@example.com' => 'to name!']);
+        $email->setFrom(['from@example.com', 'from name!']);
+        $email->setSubject('Invitation');
+        $email->setText('You are invited for giving test');
+        $email->setHtml('This is the <h1>HTML</h1>');
+        $email->setAttachments([$file, 'fixtures/logo.png']);
+        $email->setInlineImages(['fixtures/logo.png', $imageFile]);
+
+        $this->sendEmail($email, 'advance')->shouldReturn($result);
+    }
+
+    function it_should_throw_exception_when_basic_email_send_failed_due_to_missing_params(
+        AbstractHttpClient $client,
+        TransformerInterface $transformer,
+        Email $email
+    ) {
+        $result = [
+            'code' => 'failure',
+            'message' => 'Required parameters missing'
         ];
 
         $resultString = json_encode($result);
@@ -91,6 +92,36 @@ class EmailSpec extends ObjectBehavior
 
         $email->setFrom(['from@example.com', 'from name!']);
 
-        $this->shouldThrow('\Exception')->duringSendEmail($email);
+        $this
+            ->shouldThrow('Scoringline\SendinblueApi\Exception\EmailSendFailureException')
+            ->duringSendEmail($email)
+        ;
+    }
+
+    function it_should_throw_error_with_advance_email_when_attachment_file_not_exist(Email $email)
+    {
+        $file = new File('fixtures/test.txt');
+        $email
+            ->setAttachments([$file, 'logo1.png'])
+            ->willThrow('Scoringline\SendinblueApi\Exception\FileNotExistsException')
+        ;
+        $this
+            ->shouldThrow('Prophecy\Exception\Call\UnexpectedCallException')
+            ->duringSendEmail($email, 'advance')
+        ;
+    }
+
+    function it_should_throw_error_with_advance_email_when_inline_image_invalid(Email $email)
+    {
+        $email->setTo(['to@example.com' => 'to name!']);
+        $email
+            ->setInlineImages(['test.txt'])
+            ->willThrow('Scoringline\SendinblueApi\Exception\InvalidFileException')
+        ;
+
+        $this
+            ->shouldThrow('Prophecy\Exception\Call\UnexpectedCallException')
+            ->duringSendEmail($email, 'advance')
+        ;
     }
 }

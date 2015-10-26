@@ -1,65 +1,104 @@
 <?php
 
+/**
+ * This file is a part of scoringline sendinblue api package
+ *
+ * (c) Scoringline <m.veber@scoringline.com>
+ *
+ * @author Joni Rajput <joni@sendinblue.com>
+ *
+ * For the full license, take a look to the LICENSE file
+ * on the root directory of this project
+ */
 namespace Scoringline\SendinblueApi\Model;
 
+use Scoringline\SendinblueApi\Exception\FileNotExistsException;
+use Scoringline\SendinblueApi\Exception\InvalidFileException;
 use Symfony\Component\HttpFoundation\File\File;
+use Scoringline\SendinblueApi\Api\Email as EmailApi;
 
 class Email
 {
     /**
      * @var array
      */
-    private $to = [];
+    private $to;
 
     /**
      * @var array
      */
-    private $from = [];
+    private $from;
 
     /**
      * @var string
      */
-    private $subject = '';
+    private $subject;
 
     /**
      * @var string
      */
-    private $text = '';
+    private $text;
 
     /**
      * @var string
      */
-    private $html = '';
+    private $html;
 
     /**
      * @var array
      */
-    private $headers = ["Content-Type" => "text/html; charset=utf-8"];
+    private $headers;
 
     /**
      * @var array
      */
-    private $replyTo = [];
+    private $replyTo;
 
     /**
      * @var array
      */
-    private $cc = [];
+    private $cc;
 
     /**
      * @var array
      */
-    private $bcc = [];
+    private $bcc;
 
     /**
      * @var array
      */
-    private $attachment = [];
+    private $attachments;
 
     /**
      * @var array
      */
-    private $inlineImage = [];
+    private $inlineImages;
+
+    /**
+     * @var EmailApi
+     */
+    private $email;
+
+    /**
+     * CONSTRUCTOR
+     * @param string $encoding
+     * @param EmailApi $email
+     */
+    public function __construct(EmailApi $email, $encoding = 'utf-8')
+    {
+        $this->to = [];
+        $this->from = [];
+        $this->subject = '';
+        $this->html = '';
+        $this->text = '';
+        $this->headers = ["Content-Type" => "text/html; charset=" . $encoding];
+        $this->replyTo = [];
+        $this->cc = [];
+        $this->bcc = [];
+        $this->attachments = [];
+        $this->inlineImages = [];
+        $this->email = $email;
+    }
 
     /**
      * @param array $to
@@ -234,65 +273,67 @@ class Email
     }
 
     /**
-     * @param array|object $attachmentData
+     * @param array $attachments
      * @return Email
      */
-    public function setAttachment($attachmentData)
+    public function setAttachments(array $attachments)
     {
         // SOF attachment content encoding
-        if (is_array($attachmentData) && count($attachmentData)) {
-            for ($i = 0; $i < count($attachmentData); $i++) {
-                if (is_object($attachmentData[$i]) && $attachmentData[$i] instanceof File) {
-                    if ($attachmentData[$i]->isFile()) {
-                        $attachmentContent = chunk_split(base64_encode(file_get_contents($attachmentData[$i])));
-                        $this->attachment[$attachmentData[$i]->getFilename()] = $attachmentContent;
-                    }
-                } else {
-                    if (file_exists($attachmentData[$i])) {
-                        $attachmentInfo = pathinfo($attachmentData[$i]);
-                        $attachmentContent = chunk_split(base64_encode(file_get_contents($attachmentData[$i])));
-                        $this->attachment[$attachmentInfo['basename']] = $attachmentContent;
-                    }
-                }
-
+        if (is_array($attachments) && count($attachments)) {
+            for ($i = 0; $i < count($attachments); $i++) {
+                $this->addAttachment($attachments[$i]);
             }
-        } elseif (is_object($attachmentData) && null === $attachmentData && $attachmentData->isValid()) {
-            $attachmentContent = chunk_split(base64_encode(file_get_contents($attachmentData)));
-            $this->attachment[$attachmentData->getClientOriginalName()] = $attachmentContent;
         }
 
         // EOF image content encoding
 
         return $this;
+    }
+
+    /**
+     * @param string|File $attachment
+     * @throws FileNotExistsException
+     * @return array
+     */
+    public function addAttachment($attachment)
+    {
+        if (is_object($attachment) && $attachment instanceof File) {
+            if ($attachment->isFile()) {
+                $attachmentContent = $this->email->encodeFileContent($attachment);
+                $this->attachments[$attachment->getFilename()] = $attachmentContent;
+            }
+        } else {
+            if (file_exists($attachment)) {
+                $attachmentInfo = pathinfo($attachment);
+                $attachmentContent = $this->email->encodeFileContent($attachment);
+                $this->attachments[$attachmentInfo['basename']] = $attachmentContent;
+            } else {
+                throw new FileNotExistsException('Attached file does not exist');
+            }
+        }
+
+        return $this->attachments;
     }
 
     /**
      * @return array
      *
      */
-    public function getAttachment()
+    public function getAttachments()
     {
-        return $this->attachment;
+        return $this->attachments;
     }
 
     /**
-     * @param array $imageArray
+     * @param array $inlineImages
      * @return Email
      */
-    public function setInlineImage(array $imageArray)
+    public function setInlineImages(array $inlineImages)
     {
         // SOF image content encoding
-        if (count($imageArray)) {
-            for ($i = 0; $i < count($imageArray); $i++) {
-                if (file_exists($imageArray[$i])) {
-                    $imageInfo = pathinfo($imageArray[$i]);
-                    $extension = $imageInfo['extension'];
-                    $extensions = ['gif', 'jpg', 'jpeg', 'png', 'bmp', 'tif'];
-                    if ($extension && in_array($extension, $extensions)) {
-                        $imageContent = chunk_split(base64_encode(file_get_contents($imageArray[$i])));
-                        $this->inlineImage[$imageInfo['basename']] = $imageContent;
-                    }
-                }
+        if (count($inlineImages)) {
+            for ($i = 0; $i < count($inlineImages); $i++) {
+                $this->addInlineImage($inlineImages[$i]);
             }
         }
         // EOF image content encoding
@@ -301,11 +342,45 @@ class Email
     }
 
     /**
+     * @param string|File $inlineImage
+     * @throws FileNotExistsException
+     * @throws InvalidFileException
      * @return array
      */
-    public function getInlineImage()
+    public function addInlineImage($inlineImage)
     {
-        return $this->inlineImage;
+        $extensions = ['gif', 'jpg', 'jpeg', 'png', 'bmp', 'tif'];
+        if (is_object($inlineImage) && $inlineImage instanceof File) {
+            if (in_array($inlineImage->getExtension(), $extensions) ) {
+                $attachmentContent = $this->email->encodeFileContent($inlineImage);
+                $this->inlineImages[$inlineImage->getFilename()] = $attachmentContent;
+            } else {
+                throw new InvalidFileException('Invalid image');
+            }
+        } else {
+            if (file_exists($inlineImage)) {
+                $imageInfo = pathinfo($inlineImage);
+                $extension = $imageInfo['extension'];
+                if ($extension && in_array($extension, $extensions)) {
+                    $imageContent = $this->email->encodeFileContent($inlineImage);
+                    $this->inlineImages[$imageInfo['basename']] = $imageContent;
+                } else {
+                    throw new InvalidFileException('Invalid image');
+                }
+            } else {
+                throw new FileNotExistsException('Image does not exist');
+            }
+        }
+
+        return $this->inlineImages;
+    }
+
+    /**
+     * @return array
+     */
+    public function getInlineImages()
+    {
+        return $this->inlineImages;
     }
 }
 

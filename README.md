@@ -70,8 +70,36 @@ use Symfony\Component\HttpFoundation\File\File;
 
 $sendinblue = new Sendinblue();
 
-$email = new Email();
-$file = new File('/docs/mydocument.doc');
+$email = new Email($sendinblue);
+
+// Send basic email
+$email
+    ->setTo(['to@example.com' => 'to name!'])
+    ->setFrom(['to@example.com', 'to name!'])
+    ->setSubject('Invitation')
+    ->setText('You are invited for giving test');
+    ->setHtml('This is the <h1>HTML</h1>')
+;
+    
+$sendinblue->sendEmail($email);      
+
+// Send advance email with attachment
+$email = new Email($sendinblue);
+$file = new File('fixtures/test.doc');
+$email
+    ->setTo(['to@example.com' => 'to name!'])
+    ->setFrom(['to@example.com', 'to name!'])
+    ->setSubject('Invitation')
+    ->setText('You are invited for giving test');
+    ->setHtml('This is the <h1>HTML</h1>')
+    ->setAttachments(['fixtures/logo.png', $file])
+    ->setInlineImages(['fixtures/logo.png', 'fixtures/logo_one.png'])
+;
+    
+$sendinblue->sendEmail($email, 'advance');        
+    
+// Send advance email with cc, bcc etc
+$email = new Email($sendinblue);
 $email
     ->setTo(['to@example.com' => 'to name!'])
     ->setFrom(['to@example.com', 'to name!'])
@@ -80,15 +108,12 @@ $email
     ->setHtml('This is the <h1>HTML</h1>')
     ->setReplyTo(['replyto@example.com', 'replyto name'])
     ->setCc(['cc@example.com' => 'cc name'])
-    ->setBcc(['bcc@example.com' => 'Bcc name']);
-    ->setAttachment(['myfilename.pdf', $file, 'images/image.gif'])
-    ->setInlineImage(['logo.png', 'images/image.gif'])
-    ->setHeaders(["Content-Type" => "text/html; charset=utf-8"])
-    ;
-$sendinblue->sendEmail($email);    
-    
-```
+    ->setBcc(['bcc@example.com' => 'Bcc name'])
+;
 
+$sendinblue->sendEmail($email, 'advance'); 
+
+```
 ----------------------------------------------------------------
 
 This library is provided to you by [Scoringline](http://en.scoringline.com), if you're searching for more efficient hiring, checkout our application !
