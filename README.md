@@ -38,8 +38,7 @@ use Scoringline\SendinblueApi\Sendinblue;
 
 $sendinblue = new Sendinblue();
 
-$sendinblue->authenticate('ApiKey', ['key' => 'YourPrivateApiKey']);
-```
+$sendinblue->useAuthentication('ApiKey', ['key' => 'YourPrivateApiKey']);
 
 
 SMS Api usage
@@ -70,39 +69,46 @@ use Symfony\Component\HttpFoundation\File\File;
 
 $sendinblue = new Sendinblue();
 
-$email = new Email($sendinblue);
+// Send basic email without model    
+$sendinblue
+    ->getEmailApi()
+    ->sendSimpleEmail(
+        ['from@example.com', 'from name!'], 
+        ['to@example.com' => 'to name!'], 
+        'Subject', 
+        '<h1>Html</h1> message you want to send'
+    )
+;      
 
-// Send basic email
-$email
-    ->setTo(['to@example.com' => 'to name!'])
-    ->setFrom(['to@example.com', 'to name!'])
-    ->setSubject('Invitation')
-    ->setText('You are invited for giving test');
-    ->setHtml('This is the <h1>HTML</h1>')
-;
-    
-$sendinblue->sendEmail($email);      
+// Send basic email with array data
+$params = [
+   'to' => ['to@example.com' => 'to name!'],
+   'from' => ['from@example.com', 'from name!'],
+   'subject' => 'Subject',
+   'html' => '<h1>Html</h1> message you want to send'
+];
+
+$email->getEmailApi()->sendEmailWithData($params);
 
 // Send advance email with attachment
-$email = new Email($sendinblue);
-$file = new File('fixtures/test.doc');
+$file = new File('fixtures/test.txt');
+$email = new Email($sendinblue->getEmailApi());
 $email
     ->setTo(['to@example.com' => 'to name!'])
-    ->setFrom(['to@example.com', 'to name!'])
-    ->setSubject('Invitation')
-    ->setText('You are invited for giving test');
-    ->setHtml('This is the <h1>HTML</h1>')
+    ->setFrom(['from@example.com', 'from name!'])
+    ->setSubject('Subject')
+    ->setText('Option text');$email
+    ->setHtml('<h1>Html</h1> message you want to send')
     ->setAttachments(['fixtures/logo.png', $file])
     ->setInlineImages(['fixtures/logo.png', 'fixtures/logo_one.png'])
 ;
     
-$sendinblue->sendEmail($email, 'advance');        
+$sendinblue->getEmailApi()->sendEmail($email);        
     
 // Send advance email with cc, bcc etc
-$email = new Email($sendinblue);
 $email
     ->setTo(['to@example.com' => 'to name!'])
-    ->setFrom(['to@example.com', 'to name!'])
+    ->setFrom(['from@example.com', 'from name!'])
     ->setSubject('Invitation')
     ->setText('You are invited for giving test');
     ->setHtml('This is the <h1>HTML</h1>')
@@ -111,7 +117,7 @@ $email
     ->setBcc(['bcc@example.com' => 'Bcc name'])
 ;
 
-$sendinblue->sendEmail($email, 'advance'); 
+$sendinblue->getEmailApi()->sendEmail($email); 
 
 ```
 ----------------------------------------------------------------

@@ -5,8 +5,6 @@
  *
  * (c) Scoringline <m.veber@scoringline.com>
  *
- * @author Joni Rajput <joni@sendinblue.com>
- *
  * For the full license, take a look to the LICENSE file
  * on the root directory of this project
  */
@@ -17,6 +15,11 @@ use Scoringline\SendinblueApi\Exception\InvalidFileException;
 use Symfony\Component\HttpFoundation\File\File;
 use Scoringline\SendinblueApi\Api\Email as EmailApi;
 
+/**
+ * Class Email
+ * @package Scoringline\SendinblueApi\Model
+ * @author Joni Rajput <joni@sendinblue.com>
+ */
 class Email
 {
     /**
@@ -139,7 +142,7 @@ class Email
     }
 
     /**
-     * @param array $subject
+     * @param string $subject
      * @return Email
      */
     public function setSubject($subject)
@@ -164,7 +167,7 @@ class Email
      */
     public function setText($text)
     {
-        $this->subject = $text;
+        $this->text = $text;
 
         return $this;
     }
@@ -183,7 +186,7 @@ class Email
      */
     public function setHtml($html)
     {
-        $this->subject = $html;
+        $this->html = $html;
 
         return $this;
     }

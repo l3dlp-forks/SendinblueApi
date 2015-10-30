@@ -5,108 +5,132 @@
  *
  * (c) Scoringline <m.veber@scoringline.com>
  *
- * @author Joni Rajput <joni@sendinblue.com>
- *
  * For the full license, take a look to the LICENSE file
  * on the root directory of this project
  */
 namespace Scoringline\SendinblueApi\Api;
 
+use GuzzleHttp\Exception\RequestException;
 use Nekland\BaseApi\Api\AbstractApi;
 use Scoringline\SendinblueApi\Exception\EmailSendFailureException;
 use Scoringline\SendinblueApi\Model\Email as EmailModel;
 
+/**
+ * Class Email
+ * @package Scoringline\SendinblueApi\Api
+ * @author Joni Rajput <joni@sendinblue.com>
+ */
 class Email extends AbstractApi
 {
     const API_URL = '/email';
 
     /**
-     * @param EmailModel $emailModel
-     * @param string $type
+     * @param array $from
+     * @param array $to
+     * @param string $subject
+     * @param string $content
+     * @param array $attachment Ie: ['YourFileName.Extension' => 'Base64EncodedChunkData'] to send attachment/s generated on the fly
+     * @param array $extraParams Ie: cc, bcc, replyTo, headers, text
      * @return array
-     * @throws \Exception
+     * @throws EmailSendFailureException
      */
-    public function sendEmail(EmailModel $emailModel, $type = 'basic')
+    public function sendSimpleEmail($from, $to, $subject, $content, $attachment = [], $extraParams = [])
     {
-        if($type === 'advance') {
-            $result = $this->post(self::API_URL, json_encode($this->getAdvanceParams($emailModel)));
-        } else {
-            $result = $this->post(self::API_URL, json_encode($this->getBasicParams($emailModel)));
+        try {
+            return $this->post(self::API_URL, json_encode(array_merge([
+                'to' => $to,
+                'from' => $from,
+                'subject' => $subject,
+                'html' => $content,
+                'attachment' => $attachment
+            ], $extraParams)));
+        } catch(RequestException $e) {
+           throw new EmailSendFailureException($e->getResponse()->getBody());
         }
+    }
 
-        if ($result['code'] === 'failure') {
-            throw new EmailSendFailureException($result['message']);
+    /**
+     * @param EmailModel $emailModel
+     * @return array
+     * @throws EmailSendFailureException
+     */
+    public function sendEmail(EmailModel $emailModel)
+    {
+        try {
+            return $this->post(self::API_URL, json_encode($this->getParameters($emailModel)));
+        } catch(RequestException $e) {
+            throw new EmailSendFailureException($e->getResponse()->getBody());
         }
+    }
 
-        return $result;
+    /**
+     * @param array $param Ie. Associative array for to, from, subject, html etc
+     * @return array
+     * @throws EmailSendFailureException
+     */
+    public function sendEmailWithData($param = [])
+    {
+        try {
+           return $this->post(self::API_URL, json_encode($param));
+        } catch(RequestException $e) {
+            throw new EmailSendFailureException($e->getResponse()->getBody());
+        }
     }
 
     /**
      * @param EmailModel $emailModel
      * @return array
      */
-    private function getBasicParams(EmailModel $emailModel)
+    private function getParameters(EmailModel $emailModel)
     {
-        $basicParams = [];
+        $params = [];
 
         // Set to
         if (count($emailModel->getTo())) {
-            $basicParams['to'] = $emailModel->getTo();
+            $params['to'] = $emailModel->getTo();
         }
         // Set from
         if (count($emailModel->getFrom())) {
-            $basicParams['from'] = $emailModel->getFrom();
+            $params['from'] = $emailModel->getFrom();
         }
         // Set subject
         if ($emailModel->getSubject()) {
-            $basicParams['subject'] = $emailModel->getSubject();
+            $params['subject'] = $emailModel->getSubject();
         }
         // Set text
         if ($emailModel->getText()) {
-            $basicParams['subject'] = $emailModel->getText();
+            $params['subject'] = $emailModel->getText();
         }
         // Set html
         if ($emailModel->getHtml()) {
-            $basicParams['html'] = $emailModel->getHtml();
+            $params['html'] = $emailModel->getHtml();
         }
 
-        return $basicParams;
-    }
-
-    /**
-     * @param EmailModel $emailModel
-     * @return array
-     */
-    private function getAdvanceParams(EmailModel $emailModel)
-    {
-        $advanceParams = [];
-        // SET headers
         if ($emailModel->getHeaders()) {
-            $advanceParams['headers'] = $emailModel->getHeaders();
+            $params['headers'] = $emailModel->getHeaders();
         }
         // SET replyTo
         if ($emailModel->getReplyTo()) {
-            $advanceParams['replyto'] = $emailModel->getReplyTo();
+            $params['replyto'] = $emailModel->getReplyTo();
         }
         // SET cc
         if ($emailModel->getCc()) {
-            $advanceParams['cc'] = $emailModel->getCc();
+            $params['cc'] = $emailModel->getCc();
         }
         // SET bcc
         if ($emailModel->getBcc()) {
-            $advanceParams['bcc'] = $emailModel->getBcc();
+            $params['bcc'] = $emailModel->getBcc();
         }
-
         // SET attachments
         if (count($emailModel->getAttachments())) {
-            $advanceParams['attachment'] = $emailModel->getAttachments();
+            $params['attachment'] = $emailModel->getAttachments();
         }
         // SET inline_image
         if (count($emailModel->getInlineImages())) {
-            $advanceParams['inline_image'] = $emailModel->getBcc();
+            $params['inline_image'] = $emailModel->getInlineImages();
         }
 
-        return array_merge($this->getBasicParams($emailModel), $advanceParams);
+        return $params;
     }
 
     /**
