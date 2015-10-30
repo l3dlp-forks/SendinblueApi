@@ -2,8 +2,6 @@
 
 namespace spec\Scoringline\SendinblueApi\Api;
 
-use Nekland\BaseApi\Http\AbstractHttpClient;
-use Nekland\BaseApi\Transformer\TransformerInterface;
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
 use Symfony\Component\HttpFoundation\File\File;
@@ -12,8 +10,11 @@ use Scoringline\SendinblueApi\Exception\EmailSendFailureException;
 
 class EmailSpec extends ObjectBehavior
 {
-
-    function let(AbstractHttpClient $client, TransformerInterface $transformer)
+    /**
+     * @param \Nekland\BaseApi\Http\AbstractHttpClient            $client
+     * @param \Nekland\BaseApi\Transformer\TransformerInterface   $transformer
+     */
+    function let($client, $transformer)
     {
         $this->beConstructedWith($client, $transformer);
     }
@@ -24,10 +25,12 @@ class EmailSpec extends ObjectBehavior
         $this->shouldHaveType('Nekland\BaseApi\Api\AbstractApi');
     }
 
-    function it_should_send_simple_email(
-        AbstractHttpClient $client,
-        TransformerInterface $transformer
-    ) {
+    /**
+     * @param \Nekland\BaseApi\Http\AbstractHttpClient            $client
+     * @param \Nekland\BaseApi\Transformer\TransformerInterface   $transformer
+     */
+    function it_should_send_simple_email($client, $transformer)
+    {
         $result = [
             'code' => 'success',
             'message' => 'Email sent successfully',
@@ -46,40 +49,47 @@ class EmailSpec extends ObjectBehavior
         )->shouldReturn($result);
     }
 
-    function it_should_send_advance_email_with_attachment_and_inline_image_when_exists_files(
-        AbstractHttpClient $client,
-        TransformerInterface $transformer,
-        Email $email
-    ) {
+
+    /**
+     * @param \Nekland\BaseApi\Http\AbstractHttpClient            $client
+     * @param \Nekland\BaseApi\Transformer\TransformerInterface   $transformer
+     * @param \Scoringline\SendinblueApi\
+     */
+    function it_should_send_advance_email_with_attachment_and_inline_image_when_exists_files($client, $transformer, $email)
+    {
         $result = [
             'code' => 'success',
             'message' => 'Email sent successfully',
             'data' => []
         ];
 
-        $file = new File('fixtures/test.txt');
-        $imageFile = new File('fixtures/logo_one.png');
+        $file = __DIR__ . '/../../../fixtures/test.txt';
+        $imageFile = new File(__DIR__ . '/../../../fixtures/logo_one.png');
 
         $resultString = json_encode($result);
         $client->send(Argument::any())->willReturn($resultString);
         $transformer->transform($resultString)->willReturn($result);
 
-        $email->setTo(['to@example.com' => 'to name!']);
-        $email->setFrom(['from@example.com', 'from name!']);
+        /*
+        $email = new Email();
+        $email->setTo('to@example.com', 'to name!');
+        $email->setFrom('from@example.com');
         $email->setSubject('Invitation');
         $email->setText('You are invited for giving test');
         $email->setHtml('This is the <h1>HTML</h1>');
         $email->setAttachments([$file, 'fixtures/logo.png']);
         $email->setInlineImages(['fixtures/logo.png', $imageFile]);
+        */
 
         $this->sendEmail($email)->shouldReturn($result);
     }
 
-    function it_should_throw_exception_when_email_send_failed_due_to_missing_params(
-        AbstractHttpClient $client,
-        TransformerInterface $transformer,
-        Email $email
-    ) {
+    /**
+     * @param \Nekland\BaseApi\Http\AbstractHttpClient            $client
+     * @param \Nekland\BaseApi\Transformer\TransformerInterface   $transformer
+     */
+    function it_should_throw_exception_when_email_send_failed_due_to_missing_params($client, $transformer)
+    {
         $result = [
             'code' => 'failure',
             'message' => 'Unable to send email. Exception message was: No recipient forward path has been supplied.',
@@ -117,10 +127,12 @@ class EmailSpec extends ObjectBehavior
         ;
     }
 
-    function it_should_throw_exception_when_email_send_failed_due_to_blank_data(
-        AbstractHttpClient $client,
-        TransformerInterface $transformer
-    ) {
+    /**
+     * @param \Nekland\BaseApi\Http\AbstractHttpClient            $client
+     * @param \Nekland\BaseApi\Transformer\TransformerInterface   $transformer
+     */
+    function it_should_throw_exception_when_email_send_failed_due_to_blank_data($client, $transformer)
+    {
 
         $result = [
             'code' => 'failure',

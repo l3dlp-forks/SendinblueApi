@@ -17,8 +17,9 @@ use Scoringline\SendinblueApi\Api\Email as EmailApi;
 
 /**
  * Class Email
- * @package Scoringline\SendinblueApi\Model
+ *
  * @author Joni Rajput <joni@sendinblue.com>
+ * @author Maxime Veber <nek.dev@gmail.com>
  */
 class Email
 {
@@ -376,6 +377,11 @@ class Email
         }
 
         return $this->inlineImages;
+    }
+
+    public function toArray()
+    {
+
     }
 
     /**
