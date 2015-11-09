@@ -14,11 +14,13 @@ use GuzzleHttp\Exception\RequestException;
 use Nekland\BaseApi\Api\AbstractApi;
 use Scoringline\SendinblueApi\Exception\EmailSendFailureException;
 use Scoringline\SendinblueApi\Model\Email as EmailModel;
+use Symfony\Component\PropertyAccess\PropertyAccess;
 
 /**
  * Class Email
- * @package Scoringline\SendinblueApi\Api
+ *
  * @author Joni Rajput <joni@sendinblue.com>
+ * @author Maxime Veber <nek.dev@gmail.com>
  */
 class Email extends AbstractApi
 {
@@ -29,37 +31,50 @@ class Email extends AbstractApi
      * @param array $to
      * @param string $subject
      * @param string $content
-     * @param array $attachment Ie: ['YourFileName.Extension' => 'Base64EncodedChunkData'] to send attachment/s generated on the fly
+     * @param array $attachments Ie: ['YourFileName.Extension' => File] (file is a File object of symfony or a string)
      * @param array $extraParams Ie: cc, bcc, replyTo, headers, text
      * @return array
      * @throws EmailSendFailureException
      */
-    public function sendSimpleEmail($from, $to, $subject, $content, $attachment = [], $extraParams = [])
+    public function sendSimpleEmail($from, $to, $subject, $content, $attachments = [], $extraParams = [])
     {
+        $email = new EmailModel();
+        $email
+            ->setFrom($from)
+            ->setTo($to)
+            ->setSubject($subject)
+            ->setHtml($content)
+        ;
+        if (!empty($attachments)) {
+            $email->setAttachments($attachments);
+        }
+        if (!empty($extraParams)) {
+            $accessor = PropertyAccess::createPropertyAccessor();
+            foreach($extraParams as $name => $value) {
+                $accessor->setValue($email, $name, $value);
+            }
+        }
+
         try {
-            return $this->post(self::API_URL, json_encode(array_merge([
-                'to' => $to,
-                'from' => $from,
-                'subject' => $subject,
-                'html' => $content,
-                'attachment' => $attachment
-            ], $extraParams)));
+            return $this->post(self::API_URL, json_encode($email->toArray()));
         } catch(RequestException $e) {
-           throw new EmailSendFailureException($e->getResponse()->getBody());
+            $error = json_decode((string) $e->getResponse()->getBody());
+            throw new EmailSendFailureException($error->message);
         }
     }
 
     /**
-     * @param EmailModel $emailModel
+     * @param EmailModel $email
      * @return array
      * @throws EmailSendFailureException
      */
-    public function sendEmail(EmailModel $emailModel)
+    public function sendEmail(EmailModel $email)
     {
         try {
-            return $this->post(self::API_URL, json_encode($this->getParameters($emailModel)));
+            return $this->post(self::API_URL, json_encode($email->toArray()));
         } catch(RequestException $e) {
-            throw new EmailSendFailureException($e->getResponse()->getBody());
+            $error = json_decode((string) $e->getResponse()->getBody());
+            throw new EmailSendFailureException($error->message);
         }
     }
 
@@ -68,78 +83,19 @@ class Email extends AbstractApi
      * @return array
      * @throws EmailSendFailureException
      */
-    public function sendEmailWithData($param = [])
+    public function sendEmailWithData($param)
     {
+        $email = new EmailModel();
+        $accessor = PropertyAccess::createPropertyAccessor();
+        foreach($param as $name => $value) {
+            $accessor->setValue($email, $name, $value);
+        }
+
         try {
-           return $this->post(self::API_URL, json_encode($param));
+           return $this->post(self::API_URL, json_encode($email->toArray()));
         } catch(RequestException $e) {
-            throw new EmailSendFailureException($e->getResponse()->getBody());
+            $error = json_decode((string) $e->getResponse()->getBody());
+            throw new EmailSendFailureException($error->message);
         }
-    }
-
-    /**
-     * @param EmailModel $emailModel
-     * @return array
-     */
-    private function getParameters(EmailModel $emailModel)
-    {
-        $params = [];
-
-        // Set to
-        if (count($emailModel->getTo())) {
-            $params['to'] = $emailModel->getTo();
-        }
-        // Set from
-        if (count($emailModel->getFrom())) {
-            $params['from'] = $emailModel->getFrom();
-        }
-        // Set subject
-        if ($emailModel->getSubject()) {
-            $params['subject'] = $emailModel->getSubject();
-        }
-        // Set text
-        if ($emailModel->getText()) {
-            $params['subject'] = $emailModel->getText();
-        }
-        // Set html
-        if ($emailModel->getHtml()) {
-            $params['html'] = $emailModel->getHtml();
-        }
-
-        if ($emailModel->getHeaders()) {
-            $params['headers'] = $emailModel->getHeaders();
-        }
-        // SET replyTo
-        if ($emailModel->getReplyTo()) {
-            $params['replyto'] = $emailModel->getReplyTo();
-        }
-        // SET cc
-        if ($emailModel->getCc()) {
-            $params['cc'] = $emailModel->getCc();
-        }
-        // SET bcc
-        if ($emailModel->getBcc()) {
-            $params['bcc'] = $emailModel->getBcc();
-        }
-        // SET attachments
-        if (count($emailModel->getAttachments())) {
-            $params['attachment'] = $emailModel->getAttachments();
-        }
-        // SET inline_image
-        if (count($emailModel->getInlineImages())) {
-            $params['inline_image'] = $emailModel->getInlineImages();
-        }
-
-        return $params;
-    }
-
-    /**
-     * ENCODE content to base_64 nad split into chunks
-     * @param string $file
-     * @return string
-     */
-    public function encodeFileContent($file)
-    {
-        return chunk_split(base64_encode(file_get_contents($file)));
     }
 }

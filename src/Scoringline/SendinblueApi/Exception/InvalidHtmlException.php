@@ -10,13 +10,7 @@
  */
 namespace Scoringline\SendinblueApi\Exception;
 
-/**
- * Class FileNotExistsException
- * @package Scoringline\SendinblueApi\Exception
- * @author Joni Rajput <joni@sendinblue.com>
- *
- */
-class FileNotExistsException extends \Exception
+class InvalidHtmlException extends \Exception
 {
 
 }

@@ -10,10 +10,8 @@
  */
 namespace Scoringline\SendinblueApi\Model;
 
-use Scoringline\SendinblueApi\Exception\FileNotExistsException;
-use Scoringline\SendinblueApi\Exception\InvalidFileException;
+use Scoringline\SendinblueApi\Exception\InvalidHtmlException;
 use Symfony\Component\HttpFoundation\File\File;
-use Scoringline\SendinblueApi\Api\Email as EmailApi;
 
 /**
  * Class Email
@@ -79,16 +77,10 @@ class Email
     private $inlineImages;
 
     /**
-     * @var EmailApi
-     */
-    private $email;
-
-    /**
      * CONSTRUCTOR
      * @param string $encoding
-     * @param EmailApi $email
      */
-    public function __construct(EmailApi $email, $encoding = 'utf-8')
+    public function __construct($encoding = 'utf-8')
     {
         $this->to = [];
         $this->from = [];
@@ -101,16 +93,18 @@ class Email
         $this->bcc = [];
         $this->attachments = [];
         $this->inlineImages = [];
-        $this->email = $email;
     }
 
     /**
-     * @param array $to
+     * @param string $email
+     * @param string $name (optional)
      * @return Email
      */
-    public function setTo(array $to)
+    public function setTo($email, $name = null)
     {
-        $this->to = $to;
+        $name = $this->guessName($name, $email);
+        $email = $this->standardizeEmail($email, $name);
+        $this->to = $email;
 
         return $this;
     }
@@ -124,12 +118,29 @@ class Email
     }
 
     /**
-     * @param array $from
+     * @param string $email
+     * @param string $name (optional)
      * @return Email
      */
-    public function setFrom(array $from)
+    public function addTo($email, $name = null)
     {
-        $this->from = $from;
+        $name = $this->guessName($name, $email);
+        $email = $this->standardizeEmail($email, $name);
+        $this->to = array_merge($this->to, $email);
+
+        return $this;
+    }
+
+    /**
+     * @param string $email
+     * @param string $name (optional)
+     * @return Email
+     */
+    public function setFrom($email, $name = null)
+    {
+        $name = $this->guessName($name, $email);
+        $email = $this->standardizeSingleEmail($email, $name);
+        $this->from = $email;
 
         return $this;
     }
@@ -182,11 +193,28 @@ class Email
     }
 
     /**
+     * This is an HTML string. You can use images.
+     * Use fullpath in the src of your image so the lib can retrieve it.
+     *
+     * You also can use {image.ext} as src path but you need to set corresponding
+     * inline images.
+     *
      * @param array $html
      * @return Email
      */
     public function setHtml($html)
     {
+        // Replacing real paths (ie /home/images/foo.png)
+        // by inline image (ie {foo.png}) for sendinblue
+        preg_match_all('/<img[^>]+src="([^">]+)"/', $html, $matches);
+        foreach($matches[1] as $srcValue) {
+            if (preg_match('/^{.*}$/', $srcValue) !== 1) {
+                $file = new File($srcValue);
+                $html = str_replace($srcValue, '{' . $file->getFilename() . '}', $html);
+                $this->addInlineImage($file, '{' . $file->getFilename() . '}');
+            }
+        }
+
         $this->html = $html;
 
         return $this;
@@ -220,12 +248,34 @@ class Email
     }
 
     /**
-     * @param array $replyTo
+     * @param array|string $header an array like ['name' => 'value'] or its name
+     * @param string       $value
      * @return Email
      */
-    public function setReplyTo(array $replyTo)
+    public function addHeader($header, $value = null)
     {
-        $this->replyTo = $replyTo;
+        if (!is_array($header)) {
+            if ($value !== null) {
+                $header = [$header => $value];
+            } else {
+                throw new \InvalidArgumentException(sprintf('You must give a value to your header'));
+            }
+        }
+        $this->headers = array_merge($this->headers, $header);
+
+        return $this;
+    }
+
+    /**
+     * @param string $email
+     * @param string $name (optional)
+     * @return Email
+     */
+    public function setReplyTo($email, $name = null)
+    {
+        $name = $this->guessName($name, $email);
+        $email = $this->standardizeSingleEmail($email, $name);
+        $this->replyTo = $email;
 
         return $this;
     }
@@ -239,12 +289,15 @@ class Email
     }
 
     /**
-     * @param array $cc
+     * @param string $email
+     * @param string $name (optional)
      * @return Email
      */
-    public function setCc(array $cc)
+    public function setCc($email, $name = null)
     {
-        $this->cc = $cc;
+        $name = $this->guessName($name, $email);
+        $email = $this->standardizeEmail($email, $name);
+        $this->cc = $email;
 
         return $this;
     }
@@ -258,12 +311,29 @@ class Email
     }
 
     /**
-     * @param array $bcc
+     * @param string $email
+     * @param string $name (optional)
      * @return Email
      */
-    public function setBcc(array $bcc)
+    public function addCc($email, $name = null)
     {
-        $this->bcc = $bcc;
+        $name = $this->guessName($name, $email);
+        $email = $this->standardizeEmail($email, $name);
+        $this->cc = array_merge($this->cc, $email);
+
+        return $this;
+    }
+
+    /**
+     * @param string $email
+     * @param string $name
+     * @return Email
+     */
+    public function setBcc($email, $name = null)
+    {
+        $name = $this->guessName($name, $email);
+        $email = $this->standardizeEmail($email, $name);
+        $this->bcc = $email;
 
         return $this;
     }
@@ -277,44 +347,51 @@ class Email
     }
 
     /**
+     * @param string $email
+     * @param string $name
+     * @return Email
+     */
+    public function addBcc($email, $name = null)
+    {
+        $name = $this->guessName($name, $email);
+        $email = $this->standardizeEmail($email, $name);
+        $this->bcc = array_merge($this->bcc, $email);
+
+        return $this;
+    }
+
+    /**
      * @param array $attachments
      * @return Email
      */
     public function setAttachments(array $attachments)
     {
-        // SOF attachment content encoding
-        if (is_array($attachments) && count($attachments)) {
-            for ($i = 0; $i < count($attachments); $i++) {
-                $this->addAttachment($attachments[$i]);
+        foreach($attachments as $name => $file) {
+            if (!is_string($name)) {
+                $name = null;
             }
+            $this->addAttachment($file, $name);
         }
-
-        // EOF image content encoding
 
         return $this;
     }
 
     /**
      * @param string|File $attachment
-     * @throws FileNotExistsException
+     * @param string      $name         (optional)
      * @return array
      */
-    public function addAttachment($attachment)
+    public function addAttachment($attachment, $name = null)
     {
-        if (is_object($attachment) && $attachment instanceof File) {
-            if ($attachment->isFile()) {
-                $attachmentContent = $this->email->encodeFileContent($attachment);
-                $this->attachments[$attachment->getFilename()] = $attachmentContent;
-            }
-        } else {
-            if (file_exists($attachment)) {
-                $attachmentInfo = pathinfo($attachment);
-                $attachmentContent = $this->email->encodeFileContent($attachment);
-                $this->attachments[$attachmentInfo['basename']] = $attachmentContent;
-            } else {
-                throw new FileNotExistsException('Attached file does not exist');
-            }
+        if (!$attachment instanceof File) {
+            $attachment = new File($attachment);
         }
+
+        if ($name === null) {
+            $name = $attachment->getFilename();
+        }
+
+        $this->attachments = array_merge($this->attachments, [$name => $attachment]);
 
         return $this->attachments;
     }
@@ -334,54 +411,54 @@ class Email
      */
     public function setInlineImages(array $inlineImages)
     {
-        // SOF image content encoding
-        if (count($inlineImages)) {
-            for ($i = 0; $i < count($inlineImages); $i++) {
-                $this->addInlineImage($inlineImages[$i]);
-            }
+        foreach($inlineImages as $name => $image) {
+            $this->addInlineImage($name, $image);
         }
-        // EOF image content encoding
 
         return $this;
     }
 
     /**
      * @param string|File $inlineImage
-     * @throws FileNotExistsException
-     * @throws InvalidFileException
+     * @param string      $name
      * @return array
      */
-    public function addInlineImage($inlineImage)
+    public function addInlineImage($inlineImage, $name)
     {
-        $extensions = ['gif', 'jpg', 'jpeg', 'png', 'bmp', 'tif'];
-        if (is_object($inlineImage) && $inlineImage instanceof File) {
-            if (in_array($inlineImage->getExtension(), $extensions) ) {
-                $attachmentContent = $this->email->encodeFileContent($inlineImage);
-                $this->inlineImages[$inlineImage->getFilename()] = $attachmentContent;
-            } else {
-                throw new InvalidFileException('Invalid image');
-            }
-        } else {
-            if (file_exists($inlineImage)) {
-                $imageInfo = pathinfo($inlineImage);
-                $extension = $imageInfo['extension'];
-                if ($extension && in_array($extension, $extensions)) {
-                    $imageContent = $this->email->encodeFileContent($inlineImage);
-                    $this->inlineImages[$imageInfo['basename']] = $imageContent;
-                } else {
-                    throw new InvalidFileException('Invalid image');
-                }
-            } else {
-                throw new FileNotExistsException('Image does not exist');
-            }
+        if(!$inlineImage instanceof File) {
+            $inlineImage = new File($inlineImage);
         }
+        $this->inlineImages = array_merge($this->inlineImages, [$name => $inlineImage]);
 
         return $this->inlineImages;
     }
 
     public function toArray()
     {
+        $html = $this->getHtml();
+        $inlineImages = $this->getInlineImages();
+        preg_match_all('/<img[^>]+src="([^">]+)"/', $html, $matches);
+        foreach($matches[1] as $srcValue) {
+            if (empty($inlineImages[str_replace(['{', '}'], '', $srcValue)])) {
+                throw new InvalidHtmlException(
+                    sprintf('The image %s does not exists in inline images', $srcValue)
+                );
+            }
+        }
 
+        return [
+            'to'           => $this->getTo(),
+            'from'         => $this->getFrom(),
+            'subject'      => $this->getSubject(),
+            'text'         => $this->getText(),
+            'html'         => $html,
+            'headers'      => $this->getHeaders(),
+            'replyTo'      => $this->getReplyTo(),
+            'cc'           => $this->getCc(),
+            'bcc'          => $this->getBcc(),
+            'attachment'   => $this->transformFiles($this->getAttachments()),
+            'inline_image' => $this->transformFiles($this->getInlineImages()),
+        ];
     }
 
     /**
@@ -390,6 +467,76 @@ class Email
     public function getInlineImages()
     {
         return $this->inlineImages;
+    }
+
+    /**
+     * @param array $items
+     * @return array
+     */
+    private function transformFiles(array $items)
+    {
+        foreach($items as $key => $file) {
+            $items[$key] = Email::encodeFileContent($file);
+        }
+
+        return $items;
+    }
+
+    /**
+     * Find a name from an email if the name is null.
+     *
+     * @param string|null $name
+     * @param string      $email
+     * @return mixed
+     */
+    private function guessName($name, $email)
+    {
+        if (is_array($email)) {
+            return null;
+        }
+        if ($name !== null) {
+            return $name;
+        }
+
+        return explode('@', $email)[0];
+    }
+
+    /**
+     * @param string $email
+     * @param string $name
+     * @return array
+     */
+    private function standardizeEmail($email, $name)
+    {
+        if (is_array($email)) {
+            return $email;
+        }
+
+        return [$email => $name];
+    }
+
+    /**
+     * @param string $email
+     * @param string $name
+     * @return array
+     */
+    private function standardizeSingleEmail($email, $name)
+    {
+        if (is_array($email)) {
+            return $email;
+        }
+
+        return [$email, $name];
+    }
+
+    /**
+     * Encode file to base_64 nad split into chunks
+     * @param File $file
+     * @return string
+     */
+    public static function encodeFileContent(File $file)
+    {
+        return chunk_split(base64_encode(file_get_contents($file)));
     }
 }
 
